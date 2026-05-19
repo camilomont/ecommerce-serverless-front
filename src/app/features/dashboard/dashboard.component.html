@@ -1,0 +1,64 @@
+<main class="min-h-screen bg-[radial-gradient(circle_at_20%_20%,#fef3c7_0%,#fff_40%,#e0f2fe_100%)] text-slate-800">
+  <div class="mx-auto max-w-6xl px-4 py-10 md:py-14">
+    <header class="mb-8 rounded-3xl border border-slate-200/70 bg-white/70 p-6 shadow-sm backdrop-blur">
+      <p class="text-xs uppercase tracking-[0.2em] text-amber-700 font-semibold">Serverless Demo</p>
+      <h1 class="mt-2 text-3xl md:text-4xl font-bold leading-tight text-slate-900">
+        Ecommerce API Console
+      </h1>
+      <p class="mt-3 max-w-2xl text-slate-600">
+        Interfaz Angular para probar en vivo Users, Products y Orders sobre API Gateway + Lambda + DynamoDB.
+      </p>
+    </header>
+
+    <nav class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-3" aria-label="Secciones">
+      <button
+        class="px-4 py-2 rounded-lg font-semibold border shadow-sm transition-colors duration-150"
+        [class.bg-white]="activeTab !== 'users'"
+        [class.text-slate-700]="activeTab !== 'users'"
+        [class.border-slate-200]="activeTab !== 'users'"
+        [class.bg-amber-100]="activeTab === 'users'"
+        [class.text-amber-800]="activeTab === 'users'"
+        [class.border-amber-300]="activeTab === 'users'"
+        (click)="selectTab('users')"
+      >
+        Usuarios
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg font-semibold border shadow-sm transition-colors duration-150"
+        [class.bg-white]="activeTab !== 'products'"
+        [class.text-slate-700]="activeTab !== 'products'"
+        [class.border-slate-200]="activeTab !== 'products'"
+        [class.bg-amber-100]="activeTab === 'products'"
+        [class.text-amber-800]="activeTab === 'products'"
+        [class.border-amber-300]="activeTab === 'products'"
+        (click)="selectTab('products')"
+      >
+        Productos
+      </button>
+      <button
+        class="px-4 py-2 rounded-lg font-semibold border shadow-sm transition-colors duration-150"
+        [class.bg-white]="activeTab !== 'orders'"
+        [class.text-slate-700]="activeTab !== 'orders'"
+        [class.border-slate-200]="activeTab !== 'orders'"
+        [class.bg-amber-100]="activeTab === 'orders'"
+        [class.text-amber-800]="activeTab === 'orders'"
+        [class.border-amber-300]="activeTab === 'orders'"
+        (click)="selectTab('orders')"
+      >
+        Compras
+      </button>
+    </nav>
+
+    <section class="animate-[fadeIn_280ms_ease-out]">
+      <div [hidden]="activeTab !== 'users'">
+        <app-users-tab></app-users-tab>
+      </div>
+      <div [hidden]="activeTab !== 'products'">
+        <app-products-tab></app-products-tab>
+      </div>
+      <div [hidden]="activeTab !== 'orders'">
+        <app-orders-tab></app-orders-tab>
+      </div>
+    </section>
+  </div>
+</main>
