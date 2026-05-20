@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Purchase } from '../../shared/models/api.models';
+import { Product, Purchase, User } from '../../shared/models/api.models';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 @Component({
@@ -12,7 +12,7 @@ import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
   templateUrl: './orders-tab.component.html',
   styleUrls: ['./orders-tab.component.css'],
 })
-export class OrdersTabComponent {
+export class OrdersTabComponent implements OnInit {
   purchases: Purchase[] = [];
   lookupUserId = '';
   message = '';
@@ -25,11 +25,12 @@ export class OrdersTabComponent {
 
   constructor(
     private readonly api: ApiService,
-    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
-    this.refreshPurchases();
+    setTimeout(() => {
+      this.refreshPurchases();
+    });
   }
 
   refreshIfReady(): void {
@@ -89,11 +90,15 @@ export class OrdersTabComponent {
       return;
     }
 
-    this.api
-      .createOrder(userId, {
-        productId,
-        quantity,
-      })
+    this.validatePurchaseRelation(userId, productId)
+      .pipe(
+        switchMap(() =>
+          this.api.createOrder(userId, {
+            productId,
+            quantity,
+          }),
+        ),
+      )
       .subscribe({
         next: (response) => {
           const successMessage = response?.message?.trim();
@@ -102,7 +107,6 @@ export class OrdersTabComponent {
           this.purchaseForm.userId = '';
           this.purchaseForm.productId = '';
           this.purchaseForm.quantity = 1;
-          this.cdr.detectChanges();
           if (this.lookupUserId === userId) {
             this.loadPurchases(true);
           }
@@ -114,7 +118,7 @@ export class OrdersTabComponent {
   }
 
   private getApiError(err: any, fallback: string): string {
-    return err?.error?.error ?? err?.error?.message ?? fallback;
+    return err?.error?.error ?? err?.error?.message ?? err?.message ?? fallback;
   }
 
   private loadAllPurchases(): void {
@@ -178,5 +182,32 @@ export class OrdersTabComponent {
     }
 
     return [];
+  }
+
+  private validatePurchaseRelation(userId: string, productId: string) {
+    return forkJoin({
+      users: this.api.getUsers(1000).pipe(
+        map((response) => response.items ?? []),
+        catchError(() => of([] as User[])),
+      ),
+      products: this.api.getProducts(1000).pipe(
+        map((response) => response.items ?? []),
+        catchError(() => of([] as Product[])),
+      ),
+    }).pipe(
+      map(({ users, products }) => {
+        const userExists = users.some((user) => user.userId === userId);
+        if (!userExists) {
+          throw new Error('El usuario no existe. No se puede registrar la compra.');
+        }
+
+        const productExists = products.some((product) => product.productId === productId);
+        if (!productExists) {
+          throw new Error('El producto no existe. No se puede registrar la compra.');
+        }
+
+        return true;
+      }),
+    );
   }
 }

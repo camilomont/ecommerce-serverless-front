@@ -23,7 +23,9 @@ export class UsersTabComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loadUsers();
+    setTimeout(() => {
+      this.loadUsers();
+    });
   }
 
   loadUsers(preserveStatus = false): void {
@@ -35,9 +37,11 @@ export class UsersTabComponent implements OnInit {
     this.api.getUsers().subscribe({
       next: (response) => {
         this.users = response.items ?? [];
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = this.getApiError(err, 'No se pudo cargar usuarios');
+        this.cdr.detectChanges();
       },
     });
   }
@@ -68,7 +72,6 @@ export class UsersTabComponent implements OnInit {
         this.form.userId = '';
         this.form.name = '';
         this.form.email = '';
-        this.cdr.detectChanges();
         this.loadUsers(true);
       },
       error: (err) => {

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { UsersTabComponent } from '../users/users-tab.component';
 import { ProductsTabComponent } from '../products/products-tab.component';
 import { OrdersTabComponent } from '../orders/orders-tab.component';
@@ -13,12 +13,18 @@ type TabKey = 'users' | 'products' | 'orders';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css'],
 })
-export class DashboardComponent {
+export class DashboardComponent implements AfterViewInit {
   activeTab: TabKey = 'users';
 
   @ViewChild(UsersTabComponent) private usersTab?: UsersTabComponent;
   @ViewChild(ProductsTabComponent) private productsTab?: ProductsTabComponent;
   @ViewChild(OrdersTabComponent) private ordersTab?: OrdersTabComponent;
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.refreshActiveTab();
+    });
+  }
 
   selectTab(tab: TabKey): void {
     this.activeTab = tab;
