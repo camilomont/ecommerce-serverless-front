@@ -16,6 +16,9 @@ export class ProductsTabComponent implements OnInit {
   message = '';
   error = '';
   form: Product = { productId: '', name: '', price: 0 };
+  editingProductId: string | null = null;
+  editForm = { name: '', price: 0 };
+  deletingProduct: Product | null = null;
 
   constructor(
     private readonly api: ApiService,
@@ -80,7 +83,83 @@ export class ProductsTabComponent implements OnInit {
     });
   }
 
+  editProduct(product: Product): void {
+    this.message = '';
+    this.error = '';
+    this.editingProductId = product.productId;
+    this.editForm.name = product.name;
+    this.editForm.price = product.price;
+  }
+
+  cancelEditProduct(): void {
+    this.editingProductId = null;
+    this.editForm.name = '';
+    this.editForm.price = 0;
+  }
+
+  saveEditProduct(): void {
+    this.message = '';
+    this.error = '';
+
+    if (!this.editingProductId) {
+      return;
+    }
+
+    const nextName = this.editForm.name.trim();
+    const nextPrice = Number(this.editForm.price);
+
+    if (!nextName) {
+      this.error = 'Debes diligenciar name para actualizar el producto.';
+      return;
+    }
+
+    if (!Number.isFinite(nextPrice) || nextPrice < 0) {
+      this.error = 'El precio debe ser un numero valido mayor o igual a 0.';
+      return;
+    }
+
+    this.api.updateProduct(this.editingProductId, { name: nextName, price: nextPrice }).subscribe({
+      next: (response) => {
+        const successMessage = response?.message?.trim();
+        this.message = successMessage ? successMessage : 'Producto actualizado correctamente.';
+        this.cancelEditProduct();
+        this.loadProducts(true);
+      },
+      error: (err) => {
+        this.error = this.getApiError(err, 'No se pudo actualizar producto');
+      },
+    });
+  }
+
+  requestDeleteProduct(product: Product): void {
+    this.message = '';
+    this.error = '';
+    this.deletingProduct = product;
+  }
+
+  cancelDeleteProduct(): void {
+    this.deletingProduct = null;
+  }
+
+  confirmDeleteProduct(): void {
+    if (!this.deletingProduct) {
+      return;
+    }
+
+    this.api.deleteProduct(this.deletingProduct.productId).subscribe({
+      next: (response) => {
+        const successMessage = response?.message?.trim();
+        this.message = successMessage ? successMessage : 'Producto eliminado correctamente.';
+        this.deletingProduct = null;
+        this.loadProducts(true);
+      },
+      error: (err) => {
+        this.error = this.getApiError(err, 'No se pudo eliminar producto');
+      },
+    });
+  }
+
   private getApiError(err: any, fallback: string): string {
-    return err?.error?.error ?? err?.error?.message ?? fallback;
+    return err?.error?.error ?? err?.error?.message ?? err?.message ?? fallback;
   }
 }

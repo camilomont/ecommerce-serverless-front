@@ -16,12 +16,34 @@ export class ApiService {
     return this.http.post<ApiMessage & { item: User }>(`${API_BASE_URL}/users`, user);
   }
 
+  updateUser(userId: string, payload: { name: string; email: string }): Observable<ApiMessage & { item?: User }> {
+    return this.http.put<ApiMessage & { item?: User }>(
+      `${API_BASE_URL}/users/${encodeURIComponent(userId)}`,
+      payload,
+    );
+  }
+
+  deleteUser(userId: string): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`);
+  }
+
   getProducts(limit = 25): Observable<ListResponse<Product>> {
     return this.http.get<ListResponse<Product>>(`${API_BASE_URL}/products?limit=${limit}`);
   }
 
   createProduct(product: Product): Observable<ApiMessage & { item: Product }> {
     return this.http.post<ApiMessage & { item: Product }>(`${API_BASE_URL}/products`, product);
+  }
+
+  updateProduct(productId: string, payload: { name: string; price: number }): Observable<ApiMessage & { item?: Product }> {
+    return this.http.put<ApiMessage & { item?: Product }>(
+      `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
+      payload,
+    );
+  }
+
+  deleteProduct(productId: string): Observable<ApiMessage> {
+    return this.http.delete<ApiMessage>(`${API_BASE_URL}/products/${encodeURIComponent(productId)}`);
   }
 
   getOrdersByUser(userId: string, limit = 25): Observable<ListResponse<Purchase>> {

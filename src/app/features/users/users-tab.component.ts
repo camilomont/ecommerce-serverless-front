@@ -16,6 +16,9 @@ export class UsersTabComponent implements OnInit {
   message = '';
   error = '';
   form: User = { userId: '', name: '', email: '' };
+  editingUserId: string | null = null;
+  editForm = { name: '', email: '' };
+  deletingUser: User | null = null;
 
   constructor(
     private readonly api: ApiService,
@@ -80,7 +83,84 @@ export class UsersTabComponent implements OnInit {
     });
   }
 
+  editUser(user: User): void {
+    this.message = '';
+    this.error = '';
+    this.editingUserId = user.userId;
+    this.editForm.name = user.name;
+    this.editForm.email = user.email;
+  }
+
+  cancelEditUser(): void {
+    this.editingUserId = null;
+    this.editForm.name = '';
+    this.editForm.email = '';
+  }
+
+  saveEditUser(): void {
+    this.message = '';
+    this.error = '';
+
+    if (!this.editingUserId) {
+      return;
+    }
+
+    const nextName = this.editForm.name.trim();
+    const nextEmail = this.editForm.email.trim();
+
+    if (!nextName || !nextEmail) {
+      this.error = 'Debes diligenciar name y email para actualizar el usuario.';
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(nextEmail)) {
+      this.error = 'El email no tiene un formato valido.';
+      return;
+    }
+
+    this.api.updateUser(this.editingUserId, { name: nextName, email: nextEmail }).subscribe({
+      next: (response) => {
+        const successMessage = response?.message?.trim();
+        this.message = successMessage ? successMessage : 'Usuario actualizado correctamente.';
+        this.cancelEditUser();
+        this.loadUsers(true);
+      },
+      error: (err) => {
+        this.error = this.getApiError(err, 'No se pudo actualizar usuario');
+      },
+    });
+  }
+
+  requestDeleteUser(user: User): void {
+    this.message = '';
+    this.error = '';
+    this.deletingUser = user;
+  }
+
+  cancelDeleteUser(): void {
+    this.deletingUser = null;
+  }
+
+  confirmDeleteUser(): void {
+    if (!this.deletingUser) {
+      return;
+    }
+
+    this.api.deleteUser(this.deletingUser.userId).subscribe({
+      next: (response) => {
+        const successMessage = response?.message?.trim();
+        this.message = successMessage ? successMessage : 'Usuario eliminado correctamente.';
+        this.deletingUser = null;
+        this.loadUsers(true);
+      },
+      error: (err) => {
+        this.error = this.getApiError(err, 'No se pudo eliminar usuario');
+      },
+    });
+  }
+
   private getApiError(err: any, fallback: string): string {
-    return err?.error?.error ?? err?.error?.message ?? fallback;
+    return err?.error?.error ?? err?.error?.message ?? err?.message ?? fallback;
   }
 }
