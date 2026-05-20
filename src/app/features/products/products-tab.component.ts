@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { Product } from '../../shared/models/api.models';
@@ -19,6 +19,7 @@ export class ProductsTabComponent implements OnInit {
 
   constructor(
     private readonly api: ApiService,
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -36,9 +37,11 @@ export class ProductsTabComponent implements OnInit {
     this.api.getProducts().subscribe({
       next: (response) => {
         this.products = response.items ?? [];
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = this.getApiError(err, 'No se pudo cargar productos');
+        this.cdr.detectChanges();
       },
     });
   }
@@ -68,6 +71,7 @@ export class ProductsTabComponent implements OnInit {
         this.form.productId = '';
         this.form.name = '';
         this.form.price = 0;
+        this.cdr.detectChanges();
         this.loadProducts(true);
       },
       error: (err) => {
