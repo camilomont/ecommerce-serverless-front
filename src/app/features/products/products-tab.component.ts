@@ -15,10 +15,12 @@ export class ProductsTabComponent implements OnInit {
   products: Product[] = [];
   message = '';
   error = '';
-  form: Product = { productId: '', name: '', price: 0 };
+  form: Product = { productId: '', name: '', price: 0, imageUrl: '' };
   editingProductId: string | null = null;
-  editForm = { name: '', price: 0 };
+  editForm = { name: '', price: 0, imageUrl: '' };
   deletingProduct: Product | null = null;
+  isUploadingCreateImage = false;
+  isUploadingEditImage = false;
 
   constructor(
     private readonly api: ApiService,
@@ -56,6 +58,7 @@ export class ProductsTabComponent implements OnInit {
     const productId = this.form.productId.trim();
     const name = this.form.name.trim();
     const price = Number(this.form.price);
+    const imageUrl = this.form.imageUrl?.trim();
 
     if (!productId || !name) {
       this.error = 'Debes diligenciar productId y name para guardar el producto.';
@@ -67,13 +70,14 @@ export class ProductsTabComponent implements OnInit {
       return;
     }
 
-    this.api.createProduct({ productId, name, price }).subscribe({
+    this.api.createProduct({ productId, name, price, imageUrl }).subscribe({
       next: (response) => {
         const successMessage = response?.message?.trim();
         this.message = successMessage ? successMessage : 'Producto guardado correctamente.';
         this.form.productId = '';
         this.form.name = '';
         this.form.price = 0;
+        this.form.imageUrl = '';
         this.cdr.detectChanges();
         this.loadProducts(true);
       },
@@ -89,12 +93,14 @@ export class ProductsTabComponent implements OnInit {
     this.editingProductId = product.productId;
     this.editForm.name = product.name;
     this.editForm.price = product.price;
+    this.editForm.imageUrl = product.imageUrl ?? '';
   }
 
   cancelEditProduct(): void {
     this.editingProductId = null;
     this.editForm.name = '';
     this.editForm.price = 0;
+    this.editForm.imageUrl = '';
   }
 
   saveEditProduct(): void {
@@ -107,6 +113,7 @@ export class ProductsTabComponent implements OnInit {
 
     const nextName = this.editForm.name.trim();
     const nextPrice = Number(this.editForm.price);
+    const nextImageUrl = this.editForm.imageUrl?.trim();
 
     if (!nextName) {
       this.error = 'Debes diligenciar name para actualizar el producto.';
@@ -118,7 +125,7 @@ export class ProductsTabComponent implements OnInit {
       return;
     }
 
-    this.api.updateProduct(this.editingProductId, { name: nextName, price: nextPrice }).subscribe({
+    this.api.updateProduct(this.editingProductId, { name: nextName, price: nextPrice, imageUrl: nextImageUrl }).subscribe({
       next: (response) => {
         const successMessage = response?.message?.trim();
         this.message = successMessage ? successMessage : 'Producto actualizado correctamente.';
@@ -157,6 +164,86 @@ export class ProductsTabComponent implements OnInit {
         this.error = this.getApiError(err, 'No se pudo eliminar producto');
       },
     });
+  }
+
+  onCreateImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.uploadProductImage(file, 'create');
+    input.value = '';
+  }
+
+  onEditImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.uploadProductImage(file, 'edit');
+    input.value = '';
+  }
+
+  private uploadProductImage(file: File, mode: 'create' | 'edit'): void {
+    this.message = '';
+    this.error = '';
+
+    if (mode === 'create') {
+      this.isUploadingCreateImage = true;
+    } else {
+      this.isUploadingEditImage = true;
+    }
+
+    this.api
+      .createProductUploadUrl({ fileName: file.name, contentType: file.type || 'application/octet-stream' })
+      .subscribe({
+        next: ({ uploadUrl, imageUrl }) => {
+          fetch(uploadUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': file.type || 'application/octet-stream',
+            },
+            body: file,
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('No se pudo subir la imagen a S3.');
+              }
+
+              if (mode === 'create') {
+                this.form.imageUrl = imageUrl;
+              } else {
+                this.editForm.imageUrl = imageUrl;
+              }
+
+              this.message = 'Imagen subida correctamente.';
+            })
+            .catch((err) => {
+              this.error = this.getApiError(err, 'No se pudo subir la imagen');
+            })
+            .finally(() => {
+              if (mode === 'create') {
+                this.isUploadingCreateImage = false;
+              } else {
+                this.isUploadingEditImage = false;
+              }
+              this.cdr.detectChanges();
+            });
+        },
+        error: (err) => {
+          this.error = this.getApiError(err, 'No se pudo generar URL de subida');
+          if (mode === 'create') {
+            this.isUploadingCreateImage = false;
+          } else {
+            this.isUploadingEditImage = false;
+          }
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   private getApiError(err: any, fallback: string): string {

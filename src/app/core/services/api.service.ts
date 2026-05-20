@@ -8,6 +8,13 @@ import { ApiMessage, ListResponse, Product, Purchase, User } from '../../shared/
 export class ApiService {
   constructor(private readonly http: HttpClient) {}
 
+  createProductUploadUrl(payload: { fileName: string; contentType: string }): Observable<{ uploadUrl: string; imageUrl: string; objectKey: string }> {
+    return this.http.post<{ uploadUrl: string; imageUrl: string; objectKey: string }>(
+      `${API_BASE_URL}/products/upload-url`,
+      payload,
+    );
+  }
+
   getUsers(limit = 25): Observable<ListResponse<User>> {
     return this.http.get<ListResponse<User>>(`${API_BASE_URL}/users?limit=${limit}`);
   }
@@ -35,7 +42,7 @@ export class ApiService {
     return this.http.post<ApiMessage & { item: Product }>(`${API_BASE_URL}/products`, product);
   }
 
-  updateProduct(productId: string, payload: { name: string; price: number }): Observable<ApiMessage & { item?: Product }> {
+  updateProduct(productId: string, payload: { name: string; price: number; imageUrl?: string }): Observable<ApiMessage & { item?: Product }> {
     return this.http.put<ApiMessage & { item?: Product }>(
       `${API_BASE_URL}/products/${encodeURIComponent(productId)}`,
       payload,
